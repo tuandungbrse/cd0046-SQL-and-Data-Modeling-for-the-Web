@@ -5,14 +5,22 @@
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import (
+  Flask, 
+  render_template, 
+  request, 
+  Response, 
+  flash, 
+  redirect, 
+  url_for
+)
 from flask_moment import Moment
-from flask_sqlalchemy import SQLAlchemy
 import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form, CSRFProtect
 from forms import *
 from flask_migrate import Migrate
+from models import Venue, Artist, Show, db
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -21,56 +29,8 @@ from flask_migrate import Migrate
 app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
-db = SQLAlchemy(app)
+db.init_app(app)
 migrate = Migrate(app, db)
-
-#----------------------------------------------------------------------------#
-# Models.
-#----------------------------------------------------------------------------#
-
-class Venue(db.Model):
-    __tablename__ = 'venues'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.ARRAY(db.String),nullable=False)
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    website_link = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean(), default=False)
-    seeking_description = db.Column(db.String(250), nullable=True)
-    shows = db.relationship('Show', backref="venue", lazy='joined', cascade="all, delete")
-    created_at = db.Column(db.DateTime(), nullable=True)
-
-
-class Artist(db.Model):
-    __tablename__ = 'artists'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.ARRAY(db.String), nullable = False)
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    website_link = db.Column(db.String(120))
-    seeking_venue = db.Column(db.Boolean(), default=False)
-    seeking_description = db.Column(db.String(250), nullable=True)
-    shows = db.relationship('Show', backref="artist", lazy='joined', cascade="all, delete")
-    created_at = db.Column(db.DateTime(), nullable=True)
-
-class Show(db.Model):
-    __tablename__ = 'shows'
-
-    id = db.Column(db.Integer, primary_key=True)
-    artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=False)
-    venue_id = db.Column(db.Integer, db.ForeignKey('venues.id'), nullable=False)
-    start_time = db.Column(db.DateTime, nullable=False)
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -163,7 +123,7 @@ def show_venue(venue_id):
     "state": venue.state,
     "address": venue.address,
     "phone": venue.phone,
-    "website_link": venue.website_link,
+    "website": venue.website_link,
     "facebook_link": venue.facebook_link,
     "seeking_talent": venue.seeking_talent,
     "seeking_description": venue.seeking_description,
@@ -186,7 +146,6 @@ def create_venue_form():
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
   form = VenueForm(request.form, meta={'csrf':False})
-  print(form.website_link.data)
   if form.validate():
     try:
       venue = Venue(
@@ -274,7 +233,7 @@ def show_artist(artist_id):
     "genres": artist.genres,
     "city": artist.city,
     "phone": artist.phone,
-    "website_link": artist.website_link,
+    "website": artist.website_link,
     "facebook_link": artist.facebook_link,
     "seeking_venue": artist.seeking_venue,
     "seeking_description": artist.seeking_description,
